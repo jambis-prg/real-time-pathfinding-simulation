@@ -58,12 +58,12 @@ function pickPathAlgorithm() {
 }
 
 function randomFreeNode(exclude = -1) {
-  let maxTries = grid.cols * grid.rows;
+  let maxTries = grid.size * grid.size;
 
   for (let i = 0; i < maxTries; i++) {
 
-    let x = floor(random(grid.cols));
-    let y = floor(random(grid.rows));
+    let x = floor(random(grid.size));
+    let y = floor(random(grid.size));
 
     if (grid.isWall(x, y)) continue;
 
@@ -75,7 +75,7 @@ function randomFreeNode(exclude = -1) {
   }
 
   // fallback: procura linearmente
-  for (let i = 0; i < grid.cols * grid.rows; i++) {
+  for (let i = 0; i < maxTries; i++) {
     let { x, y } = grid.pos(i);
 
     if (!grid.isWall(x, y) && i !== exclude) {

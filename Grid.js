@@ -1,8 +1,6 @@
 class Grid {
   constructor(size, seed = 1, wallDensity = 0.15) {
     this.size = size;
-    this.cols = size;
-    this.rows = size;
     this.seed = seed;
     this.wallDensity = wallDensity;
 
