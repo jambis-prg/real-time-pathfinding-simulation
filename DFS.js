@@ -19,7 +19,7 @@ class DFS extends PathAlgorithm {
     // se a pilha estiver vazia ou já finalizou, não faz nada
     if (this.stack.length === 0 || this.finished) {
       this.finished = true;
-      return;
+      return true;
     }
 
     // DFS remove o último elemento adicionado (Pilha/LIFO)
@@ -28,7 +28,7 @@ class DFS extends PathAlgorithm {
     // verifica se alcançou o objetivo
     if (current === this.goal) {
       this.finished = true;
-      return;
+      return true;
     }
 
     // obtém vizinhos válidos (dentro dos limites e não paredes)
@@ -41,5 +41,7 @@ class DFS extends PathAlgorithm {
         this.stack.push(neighbor); // adiciona na fronteira para exploração profunda
       }
     }
+
+    return false;
   }
 }
