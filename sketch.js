@@ -113,6 +113,8 @@ function resetAll() {
   gridSize = max(2, int(sizeInput.value()) || 20);
   speed = speedSlider.value();
 
+  randomSeed(seed);
+
   grid = new Grid(gridSize, seed, 0.2);
 
   cellSize = min(width / grid.size, height / grid.size);
@@ -134,7 +136,6 @@ function resetAll() {
 }
 
 function startSearch() {
-  randomSeed(millis());
   resetAll();
 }
 
