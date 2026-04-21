@@ -14,14 +14,14 @@ class BFS extends PathAlgorithm {
   step() {
     if (this.queue.length === 0 || this.finished) {
       this.finished = true;
-      return;
+      return true;
     }
 
     let current = this.queue.shift();
 
     if (current === this.goal) {
       this.finished = true;
-      return;
+      return true;
     }
 
     let neighbors = this.grid.neighbors(current);
@@ -32,5 +32,7 @@ class BFS extends PathAlgorithm {
         this.queue.push(neighbor);
       }
     }
+
+    return false;
   }
 }
