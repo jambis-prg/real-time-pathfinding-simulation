@@ -87,27 +87,6 @@ function randomFreeNode(exclude = -1) {
   return 0;
 }
 
-// Objetivo: canto inferior direito se for livre; senão a célula livre mais próxima (varredura a partir daí). excludeIdx = start.
-function pickGoal(excludeIdx) {
-  let gx = grid.size - 1;
-  let gy = grid.size - 1;
-
-  if (!grid.isWall(gx, gy)) {
-    let idx = grid.index(gx, gy);
-    if (idx !== excludeIdx) return idx;
-  }
-
-  for (let y = gy; y >= 0; y--) {
-    for (let x = gx; x >= 0; x--) {
-      if (grid.isWall(x, y)) continue;
-      let idx = grid.index(x, y);
-      if (idx !== excludeIdx) return idx;
-    }
-  }
-
-  return excludeIdx;
-}
-
 function resetAll() {
   seed = int(seedInput.value());
   gridSize = max(2, int(sizeInput.value()) || 20);
@@ -122,7 +101,7 @@ function resetAll() {
   path = null;
 
   start = randomFreeNode();
-  goal = pickGoal(start);
+  goal = randomFreeNode(start);
 
   grid.clear();
 
