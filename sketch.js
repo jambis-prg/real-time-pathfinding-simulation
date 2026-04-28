@@ -1,3 +1,8 @@
+const State = {
+  SEARCHING: 0,
+  MOVING: 1
+};
+
 let grid;
 let cellSize;
 
@@ -15,6 +20,13 @@ let seed = 1;
 
 let startBtn, clearBtn;
 let algoSelect, seedInput, sizeInput, speedSlider;
+
+let state = State.SEARCHING;
+let agentIndex = 0;
+let agentNode = null;
+
+let moveFrameCounter = 0;
+let moveDelay = 5; // maior = mais lento
 
 function setupUI() {
 
@@ -95,7 +107,6 @@ function resetAll() {
   randomSeed(seed);
 
   grid = new Grid(gridSize, seed, 0.2);
-
   cellSize = min(width / grid.size, height / grid.size);
 
   path = null;
@@ -106,12 +117,15 @@ function resetAll() {
   grid.clear();
 
   pathAlgo = pickPathAlgorithm();
-
   pathAlgo.init(grid, start, goal);
 
   if (!grid.hasVisited(start)) {
     grid.visit(start, -1);
   }
+
+  state = State.SEARCHING;
+  agentIndex = 0;
+  agentNode = start;
 }
 
 function startSearch() {
@@ -132,28 +146,66 @@ function draw() {
   if (!pathAlgo) return;
 
   grid.draw(cellSize);
-  // 🔴 caminho final
-  if (pathAlgo.isFinished()) {
-    fill(255, 0, 0);
-    for (let p of path || []) {
-      let { x, y } = grid.pos(p);
-      rect(x * cellSize, y * cellSize, cellSize, cellSize);
-    }
-  } else {
+
+  if (state === State.SEARCHING) {
+
     for (let i = 0; i < speed; i++) {
       if (pathAlgo.step()) {
         path = grid.getPath(goal);
+
+        agentIndex = 0;
+        agentNode = path[0];
+
+        state = State.MOVING;
         break;
+      }
+    }
+
+  } else if (state === State.MOVING) {
+
+    moveFrameCounter++;
+
+    if (moveFrameCounter >= moveDelay) {
+      moveFrameCounter = 0;
+
+      if (path && agentIndex < path.length) {
+        agentNode = path[agentIndex];
+        agentIndex++;
+      } else {
+        start = goal;
+        goal = randomFreeNode(start);
+
+        grid.clear();
+
+        pathAlgo = pickPathAlgorithm();
+        pathAlgo.init(grid, start, goal);
+
+        grid.visit(start, -1);
+
+        path = null;
+        state = State.SEARCHING;
       }
     }
   }
 
-  // 🟡 start / goal
-  fill(255, 255, 0);
-  let s = grid.pos(start);
-  rect(s.x * cellSize, s.y * cellSize, cellSize, cellSize);
+  // desenha caminho final (opcional)
+  if (path && state === State.MOVING) {
+    fill(255, 0, 0);
+    for (let p of path) {
+      let { x, y } = grid.pos(p);
+      rect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+  }
 
-  fill(255, 255, 255);
+  // agente
+  if (agentNode !== null) {
+    fill(255, 255, 0);
+    let a = grid.pos(agentNode);
+    rect(a.x * cellSize, a.y * cellSize, cellSize, cellSize);
+  }
+
+  //  goal
+  fill(255);
   let g = grid.pos(goal);
   rect(g.x * cellSize, g.y * cellSize, cellSize, cellSize);
 }
