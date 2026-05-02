@@ -5,6 +5,43 @@ class Grid {
     this.wallDensity = wallDensity;
 
     this.visited = new Map();
+    this.cells = []; // armazena os dados gerados
+    
+    // inicializa o mapa com Perlin Noise
+    this.generatePerlinMap();
+  }
+
+  // geração com Perlin Noise
+  generatePerlinMap() {
+    noiseSeed(this.seed); // define a semente para reprodutibilidade
+    let noiseScale = 0.1; // escala dos biomas
+
+    for (let x = 0; x < this.size; x++) {
+      this.cells[x] = [];
+      for (let y = 0; y < this.size; y++) {
+        // Valor para o tipo de terreno
+        let v = noise(x * noiseScale, y * noiseScale);
+        
+        let type;
+        if (v < 0.25) {
+          type = "water"; // Custo alto
+        } else if (v < 0.45) {
+          type = "sand";  // Custo médio
+        } else {
+          type = "grass"; // Custo baixo
+        }
+
+        // Valor para as paredes (obstáculos)
+        // Usamos um offset (+1000) para o ruído da parede ser diferente do terreno
+        let w = noise(x * noiseScale + 1000, y * noiseScale + 1000); 
+        let wall = w < this.wallDensity;
+
+        this.cells[x][y] = { 
+          type: type, 
+          isWall: wall 
+        };
+      }
+    }
   }
 
   index(x, y) {
@@ -22,55 +59,31 @@ class Grid {
     return x >= 0 && y >= 0 && x < this.size && y < this.size;
   }
 
-  // -------------------------
-  // hash determinístico
-  // -------------------------
-  hash(x, y) {
-    let n = x * 374761393 ^ y * 668265263 ^ this.seed * 1442695041;
-    n = (n ^ (n >> 13)) * 1274126177;
-    return Math.abs(n);
-  }
-
-  // -------------------------
-  // tipo de terreno (bioma)
-  // -------------------------
   terrainType(x, y) {
-    let v = this.hash(x, y) % 100;
-
-    if (v < 15) return "water";   // 15%
-    if (v < 35) return "sand";    // 20%
-    return "grass";               // 65%
+    return this.cells[x][y].type;
   }
 
-  // -------------------------
-  // custo (para pathfinding)
-  // -------------------------
+  isWall(x, y) {
+    return this.cells[x][y].isWall;
+  }
+
+  // custos baseados na tarefa
   cost(x, y) {
     let type = this.terrainType(x, y);
-
-    if (type === "water") return 50; // quase proibido
-    if (type === "sand") return 3;
-    return 1; // grass
+    if (type === "water") return 100; // Custo Alto
+    if (type === "sand") return 50;   // Custo Médio
+    return 10;                        // Grass / Custo Baixo
   }
 
-  // -------------------------
-  // parede (opcional)
-  // água pode ser bloqueada aqui se quiser
-  // -------------------------
-  isWall(x, y) {
-    let v = this.hash(x, y + 9999) % 1000; 
-    return v < this.wallDensity * 1000;
-  }
-
-  visit(node, parent){
+  visit(node, parent) {
     this.visited.set(node, parent);
   }
   
-  hasVisited(node){
+  hasVisited(node) {
     return this.visited.has(node);
   }
   
-  clear(){
+  clear() {
     this.visited.clear();
   }
   
@@ -80,94 +93,58 @@ class Grid {
 
     while (this.visited.has(current)) {
       path.push(current);
-
       let parent = this.visited.get(current);
-
-      // chegou na raiz (parent inválido ou self-parent)
       if (parent === -1 || parent === current || parent === undefined) {
         break;
       }
-
       current = parent;
     }
-
     return path.reverse();
   }
   
-  // -------------------------
-  // vizinhos
-  // -------------------------
   neighbors(i) {
     let { x, y } = this.pos(i);
-
-    let dirs = [
-      [1, 0], [-1, 0],
-      [0, 1], [0, -1]
-    ];
-
+    let dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
     let result = [];
 
     for (let d of dirs) {
       let nx = x + d[0];
       let ny = y + d[1];
 
-      if (!this.inBounds(nx, ny)) continue;
-      if (this.isWall(nx, ny)) continue;
-
-      result.push(this.index(nx, ny));
+      if (this.inBounds(nx, ny) && !this.isWall(nx, ny)) {
+        result.push(this.index(nx, ny));
+      }
     }
-
     return result;
   }
 
-  // -------------------------
-  // heurística A*
-  // -------------------------
   heuristic(a, b) {
     let A = this.pos(a);
     let B = this.pos(b);
-    return abs(A.x - B.x) + abs(A.y - B.y);
+    return abs(A.x - B.x) + abs(A.y - B.y); // Manhattan
   }
 
-  // -------------------------
-  // visualização
-  // -------------------------
+  // Visualização 
   draw(cellSize) {
     noStroke();
 
+    // 1) Desenha o Terreno Base (Biomas Perlin)
     for (let y = 0; y < this.size; y++) {
       for (let x = 0; x < this.size; x++) {
-
         let type = this.terrainType(x, y);
 
-        // 🎨 cores dos biomas
-        if (type === "grass") {
-          fill(50, 200, 80);   // verde
-        } 
-        else if (type === "sand") {
-          fill(240, 220, 120); // amarelo
-        } 
-        else if (type === "water") {
-          fill(60, 120, 255);  // azul
-        }
+        if (type === "grass") fill(34, 139, 34);      // Verde
+        else if (type === "sand") fill(238, 214, 175); // Areia
+        else if (type === "water") fill(30, 144, 255); // Azul
 
+        if (this.isWall(x, y)) fill(20); // Obstáculos
+        
         rect(x * cellSize, y * cellSize, cellSize, cellSize);
       }
     }
 
-    // 2) sobrescreve paredes (preto)
-    for (let y = 0; y < this.size; y++) {
-      for (let x = 0; x < this.size; x++) {
-
-        if (this.isWall(x, y)) {
-          fill(0); // preto absoluto
-          rect(x * cellSize, y * cellSize, cellSize, cellSize);
-        }
-      }
-    }
-
-    // 3) opcional: visited debug overlay
-    fill(0, 255, 0);
+    // 2) Sobreposição da busca (Visitados)
+    fill(255, 255, 255, 80);
     for (let [node, parent] of this.visited) {
       let { x, y } = this.pos(node);
       rect(x * cellSize, y * cellSize, cellSize, cellSize);
