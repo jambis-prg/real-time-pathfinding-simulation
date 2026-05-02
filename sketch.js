@@ -188,24 +188,26 @@ function draw() {
     }
   }
 
-  // desenha caminho final (opcional)
+  grid.draw(cellSize); // desenha o mapa, obstáculos e os visitados 
+
   if (path && state === State.MOVING) {
-    fill(255, 0, 0);
+    // Isso cria o efeito de "revelar" o bioma sob uma névoa clara
+    fill(255, 255, 255, 120); 
     for (let p of path) {
       let { x, y } = grid.pos(p);
       rect(x * cellSize, y * cellSize, cellSize, cellSize);
     }
   }
 
-  // agente
+  // Agente (Coletor)
   if (agentNode !== null) {
-    fill(255, 255, 0);
+    fill(255, 255, 0); // Amarelo sólido para o agente se destacar
     let a = grid.pos(agentNode);
     rect(a.x * cellSize, a.y * cellSize, cellSize, cellSize);
   }
 
-  //  goal
-  fill(255);
+  // Alvo (Vermelho sólido)
+  fill(255, 0, 0);
   let g = grid.pos(goal);
   rect(g.x * cellSize, g.y * cellSize, cellSize, cellSize);
 }
