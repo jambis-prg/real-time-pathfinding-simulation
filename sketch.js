@@ -42,6 +42,7 @@ function setupUI() {
   algoSelect.option("DFS");
   algoSelect.option("Dijkstra");
   algoSelect.option("A*");
+  algoSelect.option("Greedy");
   
   seedInput = createInput("1");
 
@@ -57,7 +58,7 @@ function setupUI() {
 
 function pickPathAlgorithm() {
   let idx = algoSelect.elt.selectedIndex;
-  if (idx < 0 || idx > 3) idx = 0;
+  if (idx < 0 || idx > 4) idx = 0;
 
   switch (idx) {
     case 0:
@@ -68,6 +69,8 @@ function pickPathAlgorithm() {
       return new Dijkstra();
     case 3:
       return new AStar();
+    case 4:
+      return new Greedy();
     default:
       return new BFS();
   }
