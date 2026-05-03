@@ -6,6 +6,7 @@ class Grid {
 
     this.visited = new Map();
     this.cells = []; // armazena os dados gerados
+    this.frontier = []; // Armazena os índices dos nós na fronteira
     
     // inicializa o mapa com Perlin Noise
     this.generatePerlinMap();
@@ -13,27 +14,25 @@ class Grid {
 
   // geração com Perlin Noise
   generatePerlinMap() {
-    noiseSeed(this.seed); // define a semente para reprodutibilidade
-    let noiseScale = 0.1; // escala dos biomas
+    noiseSeed(this.seed); 
+    let noiseScale = 0.1; // Escala suave para os biomas (água, areia, grama)
 
     for (let x = 0; x < this.size; x++) {
       this.cells[x] = [];
       for (let y = 0; y < this.size; y++) {
-        // Valor para o tipo de terreno
+        
+        // 1) GERAÇÃO DO TERRENO (Mantém Perlin para biomas orgânicos)
         let v = noise(x * noiseScale, y * noiseScale);
         
         let type;
-        if (v < 0.25) {
-          type = "water"; // Custo alto
-        } else if (v < 0.45) {
-          type = "sand";  // Custo médio
-        } else {
-          type = "grass"; // Custo baixo
-        }
+        if (v < 0.25) type = "water";
+        else if (v < 0.45) type = "sand";
+        else type = "grass";
 
-        // Valor para as paredes (obstáculos)
-        // Usamos um offset (+1000) para o ruído da parede ser diferente do terreno
-        let w = noise(x * noiseScale + 1000, y * noiseScale + 1000); 
+        // 2) Geração aleatória das paredes independentes do bioma
+        // Usamos random() para que as paredes sejam salpicadas de forma aleatória
+        // sem seguir o formato dos biomas
+        let w = random(0, 1); 
         let wall = w < this.wallDensity;
 
         this.cells[x][y] = { 
@@ -85,6 +84,7 @@ class Grid {
   
   clear() {
     this.visited.clear();
+    this.frontier = []; // Limpa a fronteira também
   }
   
   getPath(goal) {
@@ -147,6 +147,12 @@ class Grid {
     fill(255, 255, 255, 80);
     for (let [node, parent] of this.visited) {
       let { x, y } = this.pos(node);
+      rect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+    //3) Desenha fronteira
+    fill(0, 0, 255, 150); // Azul semi-transparente para a fronteira
+    for (let nodeIndex of this.frontier) {
+      let { x, y } = this.pos(nodeIndex);
       rect(x * cellSize, y * cellSize, cellSize, cellSize);
     }
   }
