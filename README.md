@@ -25,7 +25,7 @@ isFinished()
 clear()
 ```
 
-This allows BFS, DFS, Dijkstra and A* to be swapped at runtime.
+This allows BFS, DFS, Dijkstra, A* and Greedy to be swapped at runtime.
 
 ---
 
@@ -169,6 +169,7 @@ This allows full interchangeability between:
 - DFS
 - Dijkstra
 - A*
+- Greedy
 
 ---
 
@@ -226,6 +227,155 @@ Resets algorithm state so it can be reused:
 ```javascript
 this.finished = false
 ```
+
+---
+
+# Algorithms in depth
+
+Each implementation shares the same `PathAlgorithm` interface. Below: overview, step-by-step behavior, and trade-offs. A **single comparison table** for all five algorithms appears at the end of this section.
+
+---
+
+## Breadth-First Search (BFS)
+
+### Overview
+
+`BFS` explores the grid **layer by layer**: all nodes at distance *k* from the start are visited before any node at distance *k+1*. On an **unweighted** graph (each move counts as one step), it finds a path with the **minimum number of moves**. It does **not** use `grid.cost(x, y)` — terrain weights are ignored for ordering the search.
+
+### Behavior
+
+```javascript
+queue = [start]
+visit(start, -1)
+while queue not empty:
+  current = queue.shift()          // FIFO
+  if current == goal → done
+  for each unvisited neighbor:
+    visit(neighbor, current)
+    queue.push(neighbor)
+grid.frontier = [...queue]
+```
+
+### Trade-offs
+
+- **Strengths:** Complete on finite grids; shortest path in **edge count**; predictable expansion ring.
+- **Weaknesses:** Ignores terrain cost — not cheapest path in this project’s weighted map; queue can grow large.
+
+---
+
+## Depth-First Search (DFS)
+
+### Overview
+
+`DFS` goes **as deep as possible** along one branch before backtracking (implicitly, via stack order). It is **not** guaranteed to find the shortest path in edges or cost. Like BFS, it does **not** use terrain weights for expansion order.
+
+### Behavior
+
+```javascript
+stack = [start]
+visit(start, -1)
+while stack not empty:
+  current = stack.pop()              // LIFO
+  if current == goal → done
+  for each unvisited neighbor:
+    visit(neighbor, current)
+    stack.push(neighbor)
+grid.frontier = [...stack]
+```
+
+### Trade-offs
+
+- **Strengths:** Low memory in many cases; fast when the goal lies deep along the first branch tried.
+- **Weaknesses:** Path length and total terrain cost can be poor; order depends on neighbor enumeration.
+
+---
+
+## Dijkstra's algorithm
+
+### Overview
+
+`Dijkstra` treats each cell’s move cost from `grid.cost(x, y)` (grass, sand, water). It always expands the node with the **smallest known cumulative cost** `g(n)` from the start. With non-negative weights, it finds a **minimum-cost path** to the goal.
+
+### Behavior
+
+```javascript
+priority queue ordered by g(n) = distance from start
+visit nodes as they are finalized (smallest g first)
+relax neighbors: if g(neighbor) improves, update parent and push to queue
+grid.frontier = nodes currently in the queue
+```
+
+### Trade-offs
+
+- **Strengths:** Optimal path **including terrain**; no heuristic required.
+- **Weaknesses:** Explores many nodes “in all directions”; slower than A* or Greedy when a good heuristic exists.
+
+---
+
+## A* (A-Star)
+
+### Overview
+
+`A*` combines **accumulated cost** `g(n)` with the **Manhattan heuristic** `h(n)` to the goal: `f(n) = g(n) + h(n)`. With a consistent/admissible heuristic (Manhattan on a grid without diagonal moves is admissible here), it finds an **optimal** minimum-cost path like Dijkstra but typically **fewer expansions**.
+
+### Behavior
+
+```javascript
+priority queue ordered by f(n) = g(n) + grid.heuristic(node, goal)
+when a cheaper path to a node is found, relax and update parent
+grid.frontier = open queue nodes
+```
+
+### Trade-offs
+
+- **Strengths:** Optimal terrain-aware path; usually faster than Dijkstra toward the goal.
+- **Weaknesses:** Still more work than Greedy; heuristic must remain admissible for guaranteed optimality.
+
+---
+
+## Greedy Best-First Search
+
+### Overview
+
+The `Greedy` algorithm prioritizes nodes using **only** the heuristic `h(n)`:
+
+```javascript
+f(n) = h(n)   // Manhattan distance to goal
+```
+
+Unlike A*, it **does not** accumulate path cost `g(n)`. Unlike Dijkstra, it **ignores terrain cost** when choosing what to expand next.
+
+### Behavior
+
+```javascript
+queue.sort((a, b) => b.h - a.h)
+let node = queue.pop()           // smallest h(n)
+expand neighbors with h(neighbor, goal)
+```
+
+Neighbors are discovered **only once** (no relaxation): without a global cost function there is no “better path” to update.
+
+### Trade-offs
+
+- **Strengths:** Very fast; strongly directed toward the goal.
+- **Weaknesses:** Not optimal; may cross expensive terrain because only Euclidean/grid distance to the goal matters.
+
+---
+
+## Comparison across algorithms
+
+Summary table for this project’s implementations:
+
+| Property | BFS | DFS | Dijkstra | A* | Greedy |
+|----------|-----|-----|----------|-----|--------|
+| Frontier structure | Queue (FIFO) | Stack (LIFO) | Priority by `g` | Priority by `g+h` | Priority by `h` |
+| Uses `grid.cost` | No | No | Yes | Yes | No |
+| Uses `grid.heuristic` | No | No | No | Yes | Yes |
+| Shortest in **edge count** | Yes (unweighted) | No | No | No | No |
+| Minimum **terrain cost** path | No | No | Yes | Yes (admissible `h`) | No |
+| Typical speed vs goal | Moderate | Variable | Slower | Balanced | Fastest expansion toward goal |
+
+Greedy tends to feel fastest toward the goal visually but may choose **expensive** cells; Dijkstra and A* trade more exploration for **cheaper** total movement cost where grass/sand/water differ.
 
 ---
 
@@ -294,6 +444,7 @@ Implemented via dropdown:
 "DFS"
 "Dijkstra"
 "A*"
+"Greedy"
 ```
 
 Switches active instance of:
@@ -301,6 +452,7 @@ Switches active instance of:
 ```javascript
 algorithm = new BFS()
 algorithm = new DFS()
+algorithm = new Greedy()
 ```
 
 ---
@@ -408,7 +560,7 @@ This project is built around:
 
 The system allows:
 
-- BFS vs DFS vs Dijkstra vs A*
+- BFS vs DFS vs Dijkstra vs A* vs Greedy
 - real-time path visualization
 - procedural map generation
 - algorithm comparison in identical conditions
