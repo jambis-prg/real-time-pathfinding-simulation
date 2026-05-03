@@ -62,6 +62,7 @@ class Dijkstra extends PathAlgorithm {
         this.queue.push({ node: neighbor, cost: newCost });
       }
     }
+    this.grid.frontier = this.queue.map(item => item.node);
     return false;
   }
 }

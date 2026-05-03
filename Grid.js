@@ -6,6 +6,7 @@ class Grid {
 
     this.visited = new Map();
     this.cells = []; // armazena os dados gerados
+    this.frontier = []; // Armazena os índices dos nós na fronteira
     
     // inicializa o mapa com Perlin Noise
     this.generatePerlinMap();
@@ -85,6 +86,7 @@ class Grid {
   
   clear() {
     this.visited.clear();
+    this.frontier = []; // Limpa a fronteira também
   }
   
   getPath(goal) {
@@ -147,6 +149,12 @@ class Grid {
     fill(255, 255, 255, 80);
     for (let [node, parent] of this.visited) {
       let { x, y } = this.pos(node);
+      rect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+    //3) Desenha fronteira
+    fill(0, 0, 255, 150); // Azul semi-transparente para a fronteira
+    for (let nodeIndex of this.frontier) {
+      let { x, y } = this.pos(nodeIndex);
       rect(x * cellSize, y * cellSize, cellSize, cellSize);
     }
   }
