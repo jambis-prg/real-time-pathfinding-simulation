@@ -64,6 +64,7 @@ class AStar extends PathAlgorithm {
         this.queue.push({ node: neighbor, cost: f });
       }
     }
+    this.grid.frontier = this.queue.map(item => item.node);
     return false;
   }
 }

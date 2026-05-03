@@ -28,6 +28,10 @@ let agentNode = null;
 let moveFrameCounter = 0;
 let moveDelay = 5; // maior = mais lento
 
+let moveProgress = 0; // Vai de 0 a 1 entre uma célula e outra
+let agentNodePos = null;
+let score = 0; // Contador de comida
+
 function setupUI() {
 
   startBtn = createButton("Start");
@@ -100,6 +104,8 @@ function randomFreeNode(exclude = -1) {
 }
 
 function resetAll() {
+  score = 0;
+  
   seed = int(seedInput.value());
   gridSize = max(2, int(sizeInput.value()) || 20);
   speed = speedSlider.value();
@@ -162,29 +168,57 @@ function draw() {
     }
 
   } else if (state === State.MOVING) {
+    if (path && agentIndex < path.length - 1) {
+      let currentNode = path[agentIndex];
+      let nextNode = path[agentIndex + 1];
+      
+      let p1 = grid.pos(currentNode);
+      let p2 = grid.pos(nextNode);
 
-    moveFrameCounter++;
+      // 1. Calcula a velocidade baseada no custo do terreno de ORIGEM
+      let terrainWeight = grid.cost(p1.x, p1.y);
+      
+      // Ajuste o valor '0.1' para mudar a velocidade geral
+      // Quanto maior o peso (água=50), menor o incremento no progresso
+      let stepSize = 0.5 / terrainWeight; 
+      
+      moveProgress += stepSize;
 
-    if (moveFrameCounter >= moveDelay) {
-      moveFrameCounter = 0;
+      // 2. Interpola a posição para o desenho
+      let visualX = lerp(p1.x, p2.x, moveProgress);
+      let visualY = lerp(p1.y, p2.y, moveProgress);
+      agentNodePos = { x: visualX, y: visualY }; // Usaremos isso para desenhar
 
-      if (path && agentIndex < path.length) {
-        agentNode = path[agentIndex];
+      // 3. Quando chega em 1, pula para o próximo nó
+      if (moveProgress >= 1) {
+        moveProgress = 0;
         agentIndex++;
-      } else {
-        start = goal;
-        goal = randomFreeNode(start);
-
-        grid.clear();
-
-        pathAlgo = pickPathAlgorithm();
-        pathAlgo.init(grid, start, goal);
-
-        grid.visit(start, -1);
-
-        path = null;
-        state = State.SEARCHING;
+        agentNode = path[agentIndex];
       }
+    } else {
+      // O agente tocou na comida!
+      score++; // Incrementa o contador
+      
+      // Transfere o objetivo atual para o novo ponto de partida
+      start = goal;
+      // Sorteia um novo objetivo aleatório no mapa atual
+      goal = randomFreeNode(start);
+      
+      // Limpa os dados de visualização da busca anterior
+      grid.clear();
+      
+      // Reinicia o algoritmo para o novo alvo
+      pathAlgo = pickPathAlgorithm();
+      pathAlgo.init(grid, start, goal);
+      grid.visit(start, -1);
+      
+      // Reseta os estados de controle de animação
+      path = null;
+      agentIndex = 0;
+      agentNode = start;
+      agentNodePos = null;
+      moveProgress = 0;
+      state = State.SEARCHING;
     }
   }
 
@@ -199,15 +233,24 @@ function draw() {
     }
   }
 
-  // Agente (Coletor)
-  if (agentNode !== null) {
-    fill(255, 255, 0); // Amarelo sólido para o agente se destacar
-    let a = grid.pos(agentNode);
-    rect(a.x * cellSize, a.y * cellSize, cellSize, cellSize);
-  }
-
   // Alvo (Vermelho sólido)
   fill(255, 0, 0);
   let g = grid.pos(goal);
   rect(g.x * cellSize, g.y * cellSize, cellSize, cellSize);
+  
+  // Desenho do agente dinâmico
+  if (state === State.MOVING && agentNodePos) {
+    fill(255, 255, 0);
+    rect(agentNodePos.x * cellSize, agentNodePos.y * cellSize, cellSize, cellSize);
+  } else if (agentNode !== null) {
+    fill(255, 255, 0);
+    let a = grid.pos(agentNode);
+    rect(a.x * cellSize, a.y * cellSize, cellSize, cellSize);
+  }
+  
+  // Placar na tela
+  fill(0); // Cor branca
+  textSize(20); // Tamanho da fonte
+  textAlign(LEFT, TOP);
+  text("Score: " + score, 10, 10);
 }

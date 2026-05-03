@@ -32,7 +32,7 @@ class BFS extends PathAlgorithm {
         this.queue.push(neighbor);
       }
     }
-
+    this.grid.frontier = [...this.queue]; // Copia os itens da fila para o grid
     return false;
   }
 }

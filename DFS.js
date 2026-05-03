@@ -41,7 +41,8 @@ class DFS extends PathAlgorithm {
         this.stack.push(neighbor); // adiciona na fronteira para exploração profunda
       }
     }
-
+    this.grid.frontier = [...this.stack];
+    
     return false;
   }
 }
